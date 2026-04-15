@@ -6,10 +6,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/kuleuven/nfs4go/auth"
-	"github.com/kuleuven/nfs4go/clients"
-	"github.com/kuleuven/nfs4go/logger"
-	"github.com/kuleuven/nfs4go/worker"
+	"github.com/hkdb/nfs4go/auth"
+	"github.com/hkdb/nfs4go/clients"
+	"github.com/hkdb/nfs4go/logger"
+	"github.com/hkdb/nfs4go/worker"
 	"go.uber.org/multierr"
 )
 

@@ -8,12 +8,12 @@ import (
 	"math"
 	"os"
 
-	"github.com/kuleuven/nfs4go/auth"
-	"github.com/kuleuven/nfs4go/clients"
-	"github.com/kuleuven/nfs4go/clock"
-	"github.com/kuleuven/nfs4go/logger"
-	"github.com/kuleuven/nfs4go/msg"
-	"github.com/kuleuven/nfs4go/xdr"
+	"github.com/hkdb/nfs4go/auth"
+	"github.com/hkdb/nfs4go/clients"
+	"github.com/hkdb/nfs4go/clock"
+	"github.com/hkdb/nfs4go/logger"
+	"github.com/hkdb/nfs4go/msg"
+	"github.com/hkdb/nfs4go/xdr"
 	"github.com/kuleuven/vfs"
 )
 

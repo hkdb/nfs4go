@@ -1,4 +1,4 @@
-module github.com/kuleuven/nfs4go
+module github.com/hkdb/nfs4go
 
 go 1.25.1
 

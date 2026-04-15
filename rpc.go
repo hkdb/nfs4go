@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/kuleuven/nfs4go/bufpool"
-	"github.com/kuleuven/nfs4go/msg"
-	"github.com/kuleuven/nfs4go/xdr"
+	"github.com/hkdb/nfs4go/bufpool"
+	"github.com/hkdb/nfs4go/msg"
+	"github.com/hkdb/nfs4go/xdr"
 )
 
 func ReceiveCall(r io.Reader) (*msg.RPCMsgCall, Bytes, error) {

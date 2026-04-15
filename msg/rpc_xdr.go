@@ -6,7 +6,7 @@ package msg
 // In principal, everything should work when commenting out
 // this file.
 
-import "github.com/kuleuven/nfs4go/xdr"
+import "github.com/hkdb/nfs4go/xdr"
 
 func (x *Auth) Decode(decoder *xdr.Decoder) error {
 	return decoder.DecodeAll(&x.Flavor, &x.Body)

@@ -1,8 +1,8 @@
 package nfs4go
 
 import (
-	"github.com/kuleuven/nfs4go/msg"
-	"github.com/kuleuven/nfs4go/xdr"
+	"github.com/hkdb/nfs4go/msg"
+	"github.com/hkdb/nfs4go/xdr"
 )
 
 type MuxMismatch struct{}

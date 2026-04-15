@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"github.com/kuleuven/nfs4go/clients"
+	"github.com/hkdb/nfs4go/clients"
 	"github.com/kuleuven/vfs"
 )
 

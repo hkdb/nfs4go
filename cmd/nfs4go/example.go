@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/kuleuven/nfs4go"
-	"github.com/kuleuven/nfs4go/auth"
+	"github.com/hkdb/nfs4go"
+	"github.com/hkdb/nfs4go/auth"
 	"github.com/kuleuven/vfs"
 	"github.com/kuleuven/vfs/fs/nativefs"
 	"github.com/kuleuven/vfs/fs/rootfs"

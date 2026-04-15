@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kuleuven/nfs4go/clock"
+	"github.com/hkdb/nfs4go/clock"
 	"github.com/kuleuven/vfs"
 )
 

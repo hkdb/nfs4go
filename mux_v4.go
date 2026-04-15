@@ -1306,6 +1306,11 @@ func (x *Compound) Renew(in, out Bytes) (uint32, error) {
 		)
 	}
 
+	// Renew the client's lease
+	if x.Locks != nil {
+		x.Locks.RenewLease(args.ClientId)
+	}
+
 	return OperationResponse(out,
 		msg.OP4_RENEW,
 		msg.NFS4_OK,

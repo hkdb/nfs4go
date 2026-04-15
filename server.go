@@ -73,6 +73,9 @@ func (s *Server) Serve(ctx context.Context) error {
 		s.listener.Close()
 	}()
 
+	// Start lease expiry monitor
+	s.locks.StartLeaseMonitor(ctx)
+
 	logger.Logger.Infof("Serving NFS at %s ...", s.listener.Addr())
 
 	for {

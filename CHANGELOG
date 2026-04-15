@@ -1,3 +1,15 @@
+**v0.0.3**
+
+Add lease tracking and enforcement
+
+  - Client leases tracked per-client with 90s timeout (RFC 7530)
+  - RENEW operation renews lease timer
+  - LOCK implicitly renews lease on success
+  - Background goroutine expires stale leases every 30s
+  - Expired clients get NFS4ERR_EXPIRED on lock attempts
+  - Released locks cleaned up on lease expiry
+
+
 **v0.0.2**
 
 - Add NFSv4 file locking (LOCK/LOCKT/LOCKU)

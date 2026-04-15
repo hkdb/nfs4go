@@ -72,11 +72,13 @@ func (x *Compound) Lock(in, out Bytes) (uint32, error) {
 
 	stateID, nfsErr := x.Locks.Lock(x.CurrentHandle.Path, lockType, offset, length, clientID, owner)
 	if nfsErr != 0 {
-		// Return denied with empty lock denied info
 		encoder := xdr.NewEncoder(out)
 		encoder.EncodeAll(msg.OP4_LOCK, nfsErr)
 		return nfsErr, nil
 	}
+
+	// Implicit lease renewal on successful lock
+	x.Locks.RenewLease(clientID)
 
 	// Success: return lock stateid
 	encoder := xdr.NewEncoder(out)

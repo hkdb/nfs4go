@@ -1,11 +1,17 @@
 package nfs4go
 
 import (
+	"context"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/hkdb/nfs4go/msg"
 )
+
+// DefaultLeaseTimeout is how long a client lease lasts without renewal.
+// Per RFC 7530, typical values are 45-90 seconds.
+const DefaultLeaseTimeout = 90 * time.Second
 
 // Lock types per RFC 7530
 const (
@@ -29,21 +35,73 @@ type FileLock struct {
 // Advisory locking only — locks don't prevent READ/WRITE operations,
 // they only prevent conflicting lock grants.
 type LockManager struct {
-	// filePath -> list of locks
-	locks      map[string][]FileLock
-	mu         sync.RWMutex
-	nextSeqID  uint32
-	graceEnd   time.Time
-	gracePeriod time.Duration
+	locks        map[string][]FileLock    // filePath -> list of locks
+	clientLeases map[uint64]time.Time     // clientID -> lease expiry time
+	mu           sync.RWMutex
+	nextSeqID    uint32
+	graceEnd     time.Time
+	gracePeriod  time.Duration
+	leaseTimeout time.Duration
 }
 
 // NewLockManager creates a lock manager with a grace period for lock reclamation.
 func NewLockManager(gracePeriod time.Duration) *LockManager {
 	return &LockManager{
-		locks:       make(map[string][]FileLock),
-		nextSeqID:   1,
-		graceEnd:    time.Now().Add(gracePeriod),
-		gracePeriod: gracePeriod,
+		locks:        make(map[string][]FileLock),
+		clientLeases: make(map[uint64]time.Time),
+		nextSeqID:    1,
+		graceEnd:     time.Now().Add(gracePeriod),
+		gracePeriod:  gracePeriod,
+		leaseTimeout: DefaultLeaseTimeout,
+	}
+}
+
+// RenewLease updates the lease timer for a client.
+// Called on RENEW and implicitly on LOCK operations.
+func (lm *LockManager) RenewLease(clientID uint64) {
+	lm.mu.Lock()
+	defer lm.mu.Unlock()
+	lm.clientLeases[clientID] = time.Now().Add(lm.leaseTimeout)
+}
+
+// StartLeaseMonitor runs a background goroutine that checks for expired client
+// leases every 30 seconds and releases their locks.
+func (lm *LockManager) StartLeaseMonitor(ctx context.Context) {
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				lm.expireStaleLeases()
+			}
+		}
+	}()
+}
+
+func (lm *LockManager) expireStaleLeases() {
+	now := time.Now()
+
+	lm.mu.Lock()
+	var expired []uint64
+	for clientID, expiry := range lm.clientLeases {
+		if now.After(expiry) {
+			expired = append(expired, clientID)
+		}
+	}
+	// Remove expired leases from the map while still holding the lock
+	for _, clientID := range expired {
+		delete(lm.clientLeases, clientID)
+	}
+	lm.mu.Unlock()
+
+	// Release locks outside the main lock to avoid holding it too long
+	for _, clientID := range expired {
+		log.Printf("lease expired for client %d, releasing locks", clientID)
+		lm.ReleaseClientLocks(clientID)
 	}
 }
 
@@ -65,6 +123,13 @@ func (lm *LockManager) Lock(filePath string, lockType uint32, offset, length uin
 
 	lm.mu.Lock()
 	defer lm.mu.Unlock()
+
+	// Verify client has an active lease — expired clients cannot acquire new locks
+	if expiry, hasLease := lm.clientLeases[clientID]; hasLease {
+		if time.Now().After(expiry) {
+			return msg.StateId4{}, msg.NFS4ERR_EXPIRED
+		}
+	}
 
 	// Check for conflicts
 	existing := lm.locks[filePath]

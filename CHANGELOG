@@ -1,0 +1,12 @@
+**v0.0.2**
+
+- Add NFSv4 file locking (LOCK/LOCKT/LOCKU)
+
+Advisory byte-range locking per RFC 7530 Section 9.
+Read locks (shared), write locks (exclusive), conflict detection,
+grace period for lock reclamation on server restart.
+
+
+**v0.0.1**
+
+- Prep as dependency

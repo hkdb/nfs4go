@@ -17,6 +17,7 @@ import (
 type Conn struct {
 	Conn    net.Conn
 	Clients *clients.Clients
+	Locks   *LockManager
 
 	FS func(creds *auth.Creds, sessionID [16]byte) *worker.Worker
 
@@ -49,6 +50,7 @@ func (c *Conn) ServeLinear(ctx context.Context) error {
 
 	mux4 := &Muxv4{
 		Clients: c.Clients,
+		Locks:   c.Locks,
 		FS:      c.FS,
 		Logger:  logger.Logger.WithField("remote", c.Conn.RemoteAddr().String()),
 	}
@@ -98,6 +100,7 @@ func (c *Conn) RunMux() {
 
 	mux4 := &Muxv4{
 		Clients: c.Clients,
+		Locks:   c.Locks,
 		FS:      c.FS,
 		Logger:  logger.Logger.WithField("remote", c.Conn.RemoteAddr().String()),
 	}

@@ -27,6 +27,7 @@ type Server struct {
 	loader   RootLoader
 
 	clients *clients.Clients
+	locks   *LockManager
 	workers map[[16]byte]map[uint32]*worker.Worker
 	wg      sync.WaitGroup
 	lock    sync.Mutex
@@ -51,6 +52,7 @@ func New(l net.Listener, loader RootLoader) (*Server, error) {
 		listener: l,
 		loader:   loader,
 		clients:  clients.New(),
+		locks:    NewLockManager(90 * time.Second), // 90s grace period per RFC 7530
 		workers:  make(map[[16]byte]map[uint32]*worker.Worker),
 	}, nil
 }
@@ -152,6 +154,7 @@ func (s *Server) HandleConn(ctx context.Context, conn net.Conn) {
 	sess := &Conn{
 		Conn:    conn,
 		Clients: s.clients,
+		Locks:   s.locks,
 		FS: func(creds *auth.Creds, sessionID [16]byte) *worker.Worker {
 			return s.GetWorker(ctx, conn, creds, sessionID)
 		},

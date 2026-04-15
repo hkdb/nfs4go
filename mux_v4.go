@@ -28,6 +28,7 @@ import (
 type Muxv4 struct {
 	Clients *clients.Clients
 	Logger  *logrus.Entry
+	Locks   *LockManager
 
 	// Retrieve a FS for the specified creds and sessionID.
 	// In case of a fatal error, Discard() is called to avoid to keep the FS in the pool.
@@ -384,9 +385,6 @@ var NotImplementedRequiredOps = []uint32{
 	msg.OP4_BIND_CONN_TO_SESSION,
 	msg.OP4_FREE_STATEID,
 	msg.OP4_ILLEGAL,
-	msg.OP4_LOCK,
-	msg.OP4_LOCKT,
-	msg.OP4_LOCKU,
 	msg.OP4_SET_SSV,
 	msg.OP4_TEST_STATEID,
 }
@@ -489,6 +487,12 @@ func (x *Compound) doOperation(in, out Bytes, op uint32) (uint32, error) { //nol
 		return x.OpenDowngrade(in, out)
 	case msg.OP4_CLOSE:
 		return x.Close(in, out)
+	case msg.OP4_LOCK:
+		return x.Lock(in, out)
+	case msg.OP4_LOCKT:
+		return x.LockTest(in, out)
+	case msg.OP4_LOCKU:
+		return x.LockUnlock(in, out)
 	case msg.OP4_READ:
 		return x.Read(in, out)
 	case msg.OP4_WRITE:

@@ -1,3 +1,12 @@
+**v0.0.4**
+
+Negotiate channel attributes in CREATE_SESSION
+
+  - Server was echoing back client-proposed channel sizes unchanged,
+  - causing Linux NFS clients to stay at 32KB wsize/rsize. Now enforces
+  - minimum 1MB request/response sizes for adequate throughput.
+
+
 **v0.0.3**
 
 Add lease tracking and enforcement
@@ -12,11 +21,11 @@ Add lease tracking and enforcement
 
 **v0.0.2**
 
-- Add NFSv4 file locking (LOCK/LOCKT/LOCKU)
+Add NFSv4 file locking (LOCK/LOCKT/LOCKU)
 
-Advisory byte-range locking per RFC 7530 Section 9.
-Read locks (shared), write locks (exclusive), conflict detection,
-grace period for lock reclamation on server restart.
+  - Advisory byte-range locking per RFC 7530 Section 9.
+  - Read locks (shared), write locks (exclusive), conflict detection,
+  - grace period for lock reclamation on server restart.
 
 
 **v0.0.1**

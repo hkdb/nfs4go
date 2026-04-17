@@ -661,6 +661,26 @@ func (x *Compound) CreateSession(in, out Bytes) (uint32, error) {
 	args.BackChanAttrs.HeaderPadSize = 0
 	args.BackChanAttrs.RdmaIrd = nil
 
+	// Negotiate channel sizes — server enforces minimums so clients
+	// don't get stuck with tiny defaults (e.g. Linux NFS client starts at 32KB).
+	const (
+		minRequestSize  = 1049620 // ~1MB, matches typical NFS server defaults
+		minResponseSize = 1049480
+		minMaxRequests  = 64
+	)
+	if args.ForeChanAttrs.MaxRequestSize < minRequestSize {
+		args.ForeChanAttrs.MaxRequestSize = minRequestSize
+	}
+	if args.ForeChanAttrs.MaxResponseSize < minResponseSize {
+		args.ForeChanAttrs.MaxResponseSize = minResponseSize
+	}
+	if args.ForeChanAttrs.MaxResponseSizeCached < 7584 {
+		args.ForeChanAttrs.MaxResponseSizeCached = 7584
+	}
+	if args.ForeChanAttrs.MaxRequests < minMaxRequests {
+		args.ForeChanAttrs.MaxRequests = minMaxRequests
+	}
+
 	x.Logger.Infof("ForeChanAttrs: %v", args.ForeChanAttrs)
 	x.Logger.Infof("BackChanAttrs: %v", args.BackChanAttrs)
 

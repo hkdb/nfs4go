@@ -403,7 +403,7 @@ func fileInfoToAttrs(fh []byte, fi vfs.FileInfo, err error, attrsRequest map[int
 			writeAny(a, 255, 4) // TODO: check
 
 		case A_maxread, A_maxwrite:
-			writeAny(a, uint64(32*1024), 8)
+			writeAny(a, uint64(1024*1024), 8) // 1MB — matches channel negotiation
 
 		case A_mode:
 			mask := (uint32(1) << 9) - 1

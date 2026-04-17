@@ -1,10 +1,17 @@
+**v0.0.5**
+
+Increase FATTR4 maxread/maxwrite from 32KB to 1MB
+
+  - Channel negotiation (v0.0.4) set session limits to 1MB but
+  - FATTR4_MAXREAD/MAXWRITE were still hardcoded to 32KB. NFS clients use these attributes to determine wsize/rsize, overriding the channel limits.
+
+
 **v0.0.4**
 
 Negotiate channel attributes in CREATE_SESSION
 
   - Server was echoing back client-proposed channel sizes unchanged,
-  - causing Linux NFS clients to stay at 32KB wsize/rsize. Now enforces
-  - minimum 1MB request/response sizes for adequate throughput.
+  - causing Linux NFS clients to stay at 32KB wsize/rsize. Now enforces minimum 1MB request/response sizes for adequate throughput.
 
 
 **v0.0.3**

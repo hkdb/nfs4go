@@ -30,7 +30,7 @@ type Worker struct {
 	discardTicker *time.Ticker
 	cleanupTicker *time.Ticker
 
-	sync.Mutex
+	sync.RWMutex
 }
 
 type NewFS func(creds *auth.Creds) vfs.AdvancedLinkFS
@@ -110,6 +110,8 @@ func (w *Worker) Close() error {
 func (w *Worker) cleanup() {
 	defer w.afterCleanup()
 
+	w.Lock()
+
 	var err error
 
 	for _, l := range w.Listers {
@@ -118,13 +120,14 @@ func (w *Worker) cleanup() {
 
 	for _, f := range w.Files {
 		err = multierr.Append(err, f.File.Close())
-
 		f.Client.Done()
 	}
 
 	w.Listers = make(map[uint64]*Lister)
 	w.Files = make(map[uint64]*File)
 	w.ClosedFiles = make(map[uint64]struct{})
+
+	w.Unlock()
 
 	err = multierr.Append(err, w.AdvancedLinkFS.Close())
 	if err != nil {

@@ -30,8 +30,8 @@ func (w *Worker) AddFile(file *File) uint64 {
 }
 
 func (w *Worker) GetFile(index uint64) (*File, bool) {
-	w.Lock()
-	defer w.Unlock()
+	w.RLock()
+	defer w.RUnlock()
 
 	f, ok := w.Files[index]
 
@@ -39,8 +39,8 @@ func (w *Worker) GetFile(index uint64) (*File, bool) {
 }
 
 func (w *Worker) GetFileByClientSeqID(client *clients.Client, clientSeqID uint32) (uint64, bool) {
-	w.Lock()
-	defer w.Unlock()
+	w.RLock()
+	defer w.RUnlock()
 
 	for index, f := range w.Files {
 		if f.ClientSeqID == clientSeqID && f.Client == client {
@@ -70,8 +70,8 @@ func (w *Worker) RemoveFile(index uint64) (*File, bool) {
 }
 
 func (w *Worker) IsRemovedFile(index uint64) bool {
-	w.Lock()
-	defer w.Unlock()
+	w.RLock()
+	defer w.RUnlock()
 
 	_, ok := w.ClosedFiles[index]
 

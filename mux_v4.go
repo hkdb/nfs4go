@@ -2291,8 +2291,6 @@ func (x *Compound) Write(in, out Bytes) (uint32, error) { //nolint:funlen
 		)
 	}
 
-	// TODO: args.Stable is USTABLE4 | DATA_SYNC4 | FILE_SYNC4, we expect the underlying filesystem to handle syncing
-
 	n, err := f.File.WriteAt(args.Data, int64(args.Offset))
 	if err != nil {
 		x.Logger.Errorf("failed to write: %v", err)
@@ -2303,8 +2301,19 @@ func (x *Compound) Write(in, out Bytes) (uint32, error) { //nolint:funlen
 		)
 	}
 
-	// Don't invalidate cache immediately while writing, unless FILE_SYNC4 is required
-	if args.Stable == msg.FILE_SYNC4 {
+	// Determine write stability:
+	// UNSTABLE4 — data in server memory, client will COMMIT for durability.
+	//             Enables write pipelining (concurrent writes without waiting).
+	// DATA_SYNC4/FILE_SYNC4 — client expects data on stable storage before ACK.
+	//             Must sync before returning, or downgrade to UNSTABLE4.
+	committed := msg.UNSTABLE4
+	if args.Stable == msg.DATA_SYNC4 || args.Stable == msg.FILE_SYNC4 {
+		type syncer interface{ Sync() error }
+		if s, ok := fs.AdvancedLinkFS.(syncer); ok {
+			if syncErr := s.Sync(); syncErr == nil {
+				committed = args.Stable
+			}
+		}
 		fs.Cache.Invalidate(f.Handle)
 	}
 
@@ -2313,7 +2322,7 @@ func (x *Compound) Write(in, out Bytes) (uint32, error) { //nolint:funlen
 		msg.NFS4_OK,
 		msg.WRITE4resok{
 			Count:     uint32(n),
-			Committed: msg.FILE_SYNC4, // Pretend it's FILE_SYNC4 even if it's DATA_SYNC4 (TODO: why is this a problem?)
+			Committed: committed,
 			WriteVerf: fs.SessionID,
 		},
 	)
@@ -2333,6 +2342,20 @@ func (x *Compound) Commit(in, out Bytes) (uint32, error) {
 	defer fs.Close()
 
 	fs.Cache.Invalidate(x.CurrentHandle.Handle)
+
+	// Sync data to stable storage if the filesystem supports it.
+	// This is called after UNSTABLE4 writes to flush buffered data.
+	type syncer interface {
+		Sync() error
+	}
+	if s, ok := fs.AdvancedLinkFS.(syncer); ok {
+		if err := s.Sync(); err != nil {
+			return OperationResponse(out,
+				msg.OP4_COMMIT,
+				msg.Err2Status(err),
+			)
+		}
+	}
 
 	return OperationResponse(out,
 		msg.OP4_COMMIT,

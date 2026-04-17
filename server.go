@@ -161,8 +161,8 @@ func (s *Server) HandleConn(ctx context.Context, conn net.Conn) {
 		FS: func(creds *auth.Creds, sessionID [16]byte) *worker.Worker {
 			return s.GetWorker(ctx, conn, creds, sessionID)
 		},
-		Request:  make(chan Request, 50),
-		Response: make(chan Response, 50),
+		Request:  make(chan Request, 256),
+		Response: make(chan Response, 256),
 	}
 
 	if err := sess.Serve(ctx); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.EOF) {

@@ -1,3 +1,14 @@
+**v0.0.6**
+
+Write pipelining + concurrent operation support
+
+  - WRITE handler returns UNSTABLE4 for unstable writes, enabling write pipelining — client sends many writes concurrently without waiting. For DATA_SYNC4/FILE_SYNC4 requests, calls Sync() on the filesystem and only returns the requested stability if sync succeeds. Otherwise downgrades to UNSTABLE4. Never lies about durability.
+  - COMMIT handler calls Sync() on the underlying filesystem (if supported) to flush buffered data to stable storage.
+  - Worker cleanup() now acquires lock before iterating file/lister maps, fixing a race condition with concurrent request handlers.
+  - Worker locking changed from Mutex to RWMutex. Read-only operations (GetFile, IsRemovedFile, GetFileByClientSeqID) use RLock for concurrent access.
+  - Request/Response channel buffers increased from 50 to 256.
+
+
 **v0.0.5**
 
 Increase FATTR4 maxread/maxwrite from 32KB to 1MB

@@ -162,7 +162,7 @@ func (s *Server) HandleConn(ctx context.Context, conn net.Conn) {
 			return s.GetWorker(ctx, conn, creds, sessionID)
 		},
 		Request:  make(chan Request, 256),
-		Response: make(chan Response, 256),
+		Response: make(chan Response, 4096),
 	}
 
 	if err := sess.Serve(ctx); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.EOF) {

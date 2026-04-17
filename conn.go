@@ -106,24 +106,45 @@ func (c *Conn) RunMux() {
 	}
 	muxOther := &MuxMismatch{}
 
+	// Collector goroutine: drains per-request slots into the main Response channel.
+	// This prevents head-of-line blocking — handlers never block waiting for the
+	// main Response channel. Each handler writes to its own slot (buffered size 1),
+	// and the collector picks them up in order.
+	slots := make(chan chan Response, 8192) // ordered queue of per-request slots
+	var collectWg sync.WaitGroup
+	collectWg.Add(1)
+	go func() {
+		defer collectWg.Done()
+		for slot := range slots {
+			resp := <-slot
+			c.Response <- resp
+		}
+	}()
+
 	var muxwg sync.WaitGroup
 
 	for request := range c.Request {
 		muxwg.Add(1)
 
-		go func(request Request) {
+		// Each request gets its own response slot (never blocks the handler)
+		slot := make(chan Response, 1)
+		slots <- slot
+
+		go func(request Request, slot chan Response) {
 			defer muxwg.Done()
 
 			switch request.Header.Vers {
 			case 4:
-				mux4.Handle(request, c.Response)
+				mux4.Handle(request, slot)
 			default:
-				muxOther.Handle(request, c.Response)
+				muxOther.Handle(request, slot)
 			}
-		}(request)
+		}(request, slot)
 	}
 
 	muxwg.Wait()
+	close(slots)
+	collectWg.Wait()
 }
 
 func (c *Conn) ReceiveRequests(ctx context.Context) {

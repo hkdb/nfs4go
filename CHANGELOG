@@ -1,3 +1,13 @@
+**v0.0.8**
+
+Revert per-request slots, increase response buffer
+
+  - Per-request response slots added overhead without solving the
+  - underlying issue. Reverted to direct response channel writes
+  - with 65K buffer. Combined with timeo=30 client mount options,
+  - eliminates false timeouts that caused slot starvation.
+
+
 **v0.0.7**
 
 Fix response head-of-line blocking

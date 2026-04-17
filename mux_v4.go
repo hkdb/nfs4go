@@ -42,7 +42,11 @@ type FileHandle struct {
 }
 
 func (x *Muxv4) Handle(request Request, response chan<- Response) {
+	handleStart := time.Now()
 	reply, data, err := x.HandleProc(request.Header, request.Data)
+	if handleTime := time.Since(handleStart); handleTime > 100*time.Millisecond {
+		x.Logger.Warnf("PERF HANDLE: took %v", handleTime)
+	}
 	if err != nil {
 		x.Logger.Error(err)
 	}
@@ -2291,7 +2295,11 @@ func (x *Compound) Write(in, out Bytes) (uint32, error) { //nolint:funlen
 		)
 	}
 
+	writeStart := time.Now()
 	n, err := f.File.WriteAt(args.Data, int64(args.Offset))
+	if writeTime := time.Since(writeStart); writeTime > 100*time.Millisecond {
+		x.Logger.Warnf("PERF WRITE: WriteAt took %v, stable=%d, offset=%d, len=%d", writeTime, args.Stable, args.Offset, len(args.Data))
+	}
 	if err != nil {
 		x.Logger.Errorf("failed to write: %v", err)
 
@@ -2301,19 +2309,11 @@ func (x *Compound) Write(in, out Bytes) (uint32, error) { //nolint:funlen
 		)
 	}
 
-	// Determine write stability:
-	// UNSTABLE4 — data in server memory, client will COMMIT for durability.
-	//             Enables write pipelining (concurrent writes without waiting).
-	// DATA_SYNC4/FILE_SYNC4 — client expects data on stable storage before ACK.
-	//             Must sync before returning, or downgrade to UNSTABLE4.
+	// Always return UNSTABLE4 for write pipelining performance.
+	// DATA_SYNC4/FILE_SYNC4 would require per-file sync which is expensive.
+	// The client will COMMIT when it needs durability.
 	committed := msg.UNSTABLE4
-	if args.Stable == msg.DATA_SYNC4 || args.Stable == msg.FILE_SYNC4 {
-		type syncer interface{ Sync() error }
-		if s, ok := fs.AdvancedLinkFS.(syncer); ok {
-			if syncErr := s.Sync(); syncErr == nil {
-				committed = args.Stable
-			}
-		}
+	if args.Stable == msg.FILE_SYNC4 {
 		fs.Cache.Invalidate(f.Handle)
 	}
 
@@ -2344,16 +2344,20 @@ func (x *Compound) Commit(in, out Bytes) (uint32, error) {
 	fs.Cache.Invalidate(x.CurrentHandle.Handle)
 
 	// Sync data to stable storage if the filesystem supports it.
-	// This is called after UNSTABLE4 writes to flush buffered data.
 	type syncer interface {
 		Sync() error
 	}
 	if s, ok := fs.AdvancedLinkFS.(syncer); ok {
+		syncStart := time.Now()
 		if err := s.Sync(); err != nil {
+			x.Logger.Warnf("PERF COMMIT: Sync failed after %v: %v", time.Since(syncStart), err)
 			return OperationResponse(out,
 				msg.OP4_COMMIT,
 				msg.Err2Status(err),
 			)
+		}
+		if syncTime := time.Since(syncStart); syncTime > 100*time.Millisecond {
+			x.Logger.Warnf("PERF COMMIT: Sync took %v", syncTime)
 		}
 	}
 

@@ -2,8 +2,7 @@
 
 Increase FATTR4 maxread/maxwrite from 32KB to 1MB
 
-  - Channel negotiation (v0.0.4) set session limits to 1MB but
-  - FATTR4_MAXREAD/MAXWRITE were still hardcoded to 32KB. NFS clients use these attributes to determine wsize/rsize, overriding the channel limits.
+Channel negotiation (v0.0.4) set session limits to 1MB but FATTR4_MAXREAD/MAXWRITE were still hardcoded to 32KB. NFS clients use these attributes to determine wsize/rsize, overriding the channel limits.
 
 
 **v0.0.4**
